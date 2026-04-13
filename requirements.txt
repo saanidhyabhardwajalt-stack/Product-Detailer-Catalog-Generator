@@ -1,5 +1,4 @@
-streamlit
-groq
+anthropic
 pymupdf
 python-docx
 pytesseract
