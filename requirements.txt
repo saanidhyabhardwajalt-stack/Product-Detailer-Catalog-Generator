@@ -1,7 +1,7 @@
 streamlit
-google-generativeai
-pymupdf
+PyMuPDF
 python-docx
-pytesseract
 pdf2image
-pillow
+pytesseract
+Pillow
+google-generativeai
