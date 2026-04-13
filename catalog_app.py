@@ -166,7 +166,7 @@ def generate_catalog_content(combined_text, api_key):
     
     # Initialize the generative model with the standard Gemini 1.5 Pro and system prompt
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-pro-latest',
+        model_name='gemini-1.5-pro',
         system_instruction=SYSTEM_PROMPT
     )
     
