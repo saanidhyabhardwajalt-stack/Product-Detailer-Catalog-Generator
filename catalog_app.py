@@ -4,7 +4,7 @@ from docx import Document as DocxReader
 from pdf2image import convert_from_bytes
 import pytesseract
 from PIL import Image, ImageDraw, ImageFont
-from anthropic import Anthropic
+import google.generativeai as genai
 import io, os, re, textwrap, zipfile, random
 
 # ─── Page config ────────────────────────────────────────────────────
@@ -160,25 +160,24 @@ def process_uploaded_files(uploaded_files):
     )
     return combined_text, product_images
 
-# ─── Content generation (Anthropic SDK) ─────────────────────────────
+# ─── Content generation (Gemini SDK) ─────────────────────────────
 def generate_catalog_content(combined_text, api_key):
-    client = Anthropic(api_key=api_key)
-    response = client.messages.create(
-        model='claude-sonnet-4-5',
-        max_tokens=3000,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {
-                'role': 'user',
-                'content': (
-                    'Here are the product documents. '
-                    'Generate the catalog entry.\n\n'
-                    + combined_text
-                )
-            }
-        ]
+    genai.configure(api_key=api_key)
+    
+    # Initialize the generative model with the standard Gemini 1.5 Pro and system prompt
+    model = genai.GenerativeModel(
+        model_name='gemini-1.5-pro',
+        system_instruction=SYSTEM_PROMPT
     )
-    return response.content[0].text
+    
+    prompt = (
+        'Here are the product documents. '
+        'Generate the catalog entry.\n\n'
+        + combined_text
+    )
+    
+    response = model.generate_content(prompt)
+    return response.text
 
 # ─── Content parser ──────────────────────────────────────────────────
 def parse_catalog(text):
@@ -599,10 +598,10 @@ st.title('📋 Product Catalog Generator')
 st.caption('Upload product documents → get a branded visual catalog in PNG format')
 st.divider()
 
-ANTHROPIC_API_KEY = st.secrets.get('ANTHROPIC_API_KEY', '')
-if not ANTHROPIC_API_KEY:
+GEMINI_API_KEY = st.secrets.get('GEMINI_API_KEY', '')
+if not GEMINI_API_KEY:
     st.error(
-        '❌ ANTHROPIC_API_KEY not found in Streamlit Secrets. '
+        '❌ GEMINI_API_KEY not found in Streamlit Secrets. '
         'Add it via the app Settings → Secrets panel.'
     )
     st.stop()
@@ -640,16 +639,16 @@ if st.button('🎨  Generate Visual Catalog', type='primary',
         palette = extract_palette(product_images)
         st.write(f'   ✅ Accent color: RGB{palette["accent"]}')
 
-        st.write('🤖 Generating catalog content with Claude...')
+        st.write('🤖 Generating catalog content with Gemini...')
         try:
             catalog_text = generate_catalog_content(
-                combined_text, ANTHROPIC_API_KEY
+                combined_text, GEMINI_API_KEY
             )
             sections = parse_catalog(catalog_text)
             pname    = sections['product_name'] or 'Product'
             st.write(f'   ✅ Content generated for: {pname}')
         except Exception as e:
-            st.error(f'Anthropic API error: {e}')
+            st.error(f'Gemini API error: {e}')
             st.stop()
 
         st.write('🖼️  Rendering 6 catalog pages...')
